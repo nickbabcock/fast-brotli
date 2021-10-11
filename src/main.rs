@@ -12,9 +12,17 @@ fn main() -> Result<(), Error> {
         resp.send_to_client();
         Ok(())
     } else {
-        let mut resp = Response::new().with_status(200).stream_to_client();
-        recompress(req, &mut resp)?;
-        drop(resp);
+        let mut resp = Response::new()
+            .with_status(200)
+            .with_header("Content-Encoding", "br");
+
+        if let Some(content_type) = req.get_header_str("Content-Type") {
+            resp.set_header("Content-Type", content_type);
+        }
+
+        let mut streamer = resp.stream_to_client();
+        recompress(req, &mut streamer)?;
+        drop(streamer);
         Ok(())
     }
 }
